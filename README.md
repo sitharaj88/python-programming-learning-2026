@@ -5,6 +5,15 @@
 [![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Posts](https://img.shields.io/badge/Posts-120-orange.svg)](#full-curriculum-index)
+[![Website](https://img.shields.io/badge/Website-Live-brightgreen.svg)](https://sitharaj88.github.io/-python-programming-learning-2026/)
+
+<div align="center">
+
+### 🌐 [**Start Learning on Our Interactive Website →**](https://sitharaj88.github.io/-python-programming-learning-2026/)
+
+*Full tutorials, code examples, dark/light mode, and mobile-friendly design*
+
+</div>
 
 ---
 
