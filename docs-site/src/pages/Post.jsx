@@ -3,47 +3,36 @@ import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Editor from '@monaco-editor/react';
+import hljs from 'highlight.js/lib/core';
+import python from 'highlight.js/lib/languages/python';
+import javascript from 'highlight.js/lib/languages/javascript';
+import bash from 'highlight.js/lib/languages/bash';
+import 'highlight.js/styles/github-dark.css';
 import { ArrowLeft, ArrowRight, BookOpen, Code2, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { phases } from '../data/courseData';
 import { postsContent } from '../data/postsContent';
 import { useTheme } from '../context/ThemeContext';
 
-// Simple syntax highlighting for Python
-function highlightPython(code, theme) {
-    const keywords = ['def', 'class', 'if', 'elif', 'else', 'for', 'while', 'try', 'except', 'finally', 'with', 'as', 'import', 'from', 'return', 'yield', 'raise', 'pass', 'break', 'continue', 'and', 'or', 'not', 'in', 'is', 'None', 'True', 'False', 'lambda', 'global', 'nonlocal', 'assert', 'del'];
-    const builtins = ['print', 'input', 'len', 'range', 'str', 'int', 'float', 'bool', 'list', 'dict', 'set', 'tuple', 'type', 'isinstance', 'open', 'file', 'abs', 'max', 'min', 'sum', 'round', 'sorted', 'enumerate', 'zip', 'map', 'filter'];
+// Register languages
+hljs.registerLanguage('python', python);
+hljs.registerLanguage('javascript', javascript);
+hljs.registerLanguage('js', javascript);
+hljs.registerLanguage('bash', bash);
+hljs.registerLanguage('shell', bash);
 
-    const colors = theme === 'dark' ? {
-        keyword: 'text-purple-400',
-        builtin: 'text-yellow-400',
-        string: 'text-green-400',
-        comment: 'text-slate-500',
-        number: 'text-orange-400',
-        default: 'text-slate-300'
-    } : {
-        keyword: 'text-purple-600',
-        builtin: 'text-yellow-600',
-        string: 'text-green-600',
-        comment: 'text-slate-500',
-        number: 'text-orange-600',
-        default: 'text-slate-700'
-    };
-
-    return code.split('\n').map((line, i) => {
-        let highlighted = line;
-        // Comments
-        if (line.trim().startsWith('#')) {
-            return <span key={i} className={colors.comment}>{line}</span>;
-        }
-        // Simple highlighting - just return as-is for now (complex highlighting would require a proper tokenizer)
-        return <span key={i} className={colors.default}>{line}</span>;
-    });
-}
-
-// Simple code block for markdown content (no Monaco - allows page scroll)
+// Simple code block with syntax highlighting
 function SimpleCodeBlock({ code, language }) {
     const [copied, setCopied] = useState(false);
     const { theme } = useTheme();
+    const codeRef = useRef(null);
+
+    useEffect(() => {
+        if (codeRef.current) {
+            // Reset and re-highlight
+            codeRef.current.removeAttribute('data-highlighted');
+            hljs.highlightElement(codeRef.current);
+        }
+    }, [code, language]);
 
     const handleCopy = () => {
         navigator.clipboard.writeText(code);
@@ -51,12 +40,23 @@ function SimpleCodeBlock({ code, language }) {
         setTimeout(() => setCopied(false), 2000);
     };
 
+    // Map common language names
+    const langMap = {
+        'py': 'python',
+        'js': 'javascript',
+        'sh': 'bash',
+        'shell': 'bash',
+        'text': 'plaintext',
+        '': 'plaintext'
+    };
+    const highlightLang = langMap[language] || language;
+
     return (
         <div className={`rounded-lg sm:rounded-xl border overflow-hidden my-3 sm:my-4 ${theme === 'dark' ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'
             }`}>
             <div className={`flex items-center justify-between px-3 sm:px-4 py-2 border-b ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-100'
                 }`}>
-                <span className="text-xs font-medium text-emerald-500">{language}</span>
+                <span className="text-xs font-medium text-emerald-500">{language || 'code'}</span>
                 <button
                     onClick={handleCopy}
                     className={`flex items-center gap-1 text-xs px-2 py-1 rounded transition ${theme === 'dark'
@@ -68,9 +68,13 @@ function SimpleCodeBlock({ code, language }) {
                     {copied ? 'Copied!' : 'Copy'}
                 </button>
             </div>
-            <pre className={`overflow-x-auto p-3 sm:p-4 text-xs sm:text-sm leading-relaxed ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'
-                }`}>
-                <code>{code}</code>
+            <pre className={`overflow-x-auto p-3 sm:p-4 text-xs sm:text-sm leading-relaxed !bg-transparent !m-0`}>
+                <code
+                    ref={codeRef}
+                    className={`language-${highlightLang} !bg-transparent`}
+                >
+                    {code}
+                </code>
             </pre>
         </div>
     );
@@ -123,8 +127,8 @@ function CodeEditor({ code, language = 'python', height = '300px' }) {
                 <button
                     onClick={handleCopy}
                     className={`flex items-center gap-1 text-xs px-2 py-1 rounded transition ${theme === 'dark'
-                            ? 'text-slate-400 hover:text-white hover:bg-slate-700'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                        ? 'text-slate-400 hover:text-white hover:bg-slate-700'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
                         }`}
                 >
                     {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
@@ -243,8 +247,8 @@ export default function Post() {
 
             {/* Header */}
             <header className={`rounded-xl sm:rounded-2xl border p-4 sm:p-6 md:p-8 transition-colors ${theme === 'dark'
-                    ? 'border-slate-700/50 bg-gradient-to-br from-slate-800 to-slate-800/50'
-                    : 'border-slate-200 bg-white shadow-sm'
+                ? 'border-slate-700/50 bg-gradient-to-br from-slate-800 to-slate-800/50'
+                : 'border-slate-200 bg-white shadow-sm'
                 }`}>
                 <div className="flex items-start gap-3 sm:gap-4">
                     <div className="flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center rounded-lg sm:rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 text-lg sm:text-xl font-bold text-white shadow-lg shadow-emerald-500/25">
@@ -269,8 +273,8 @@ export default function Post() {
             {hasContent ? (
                 <article className="prose prose-slate max-w-none">
                     <div className={`rounded-xl sm:rounded-2xl border p-4 sm:p-6 md:p-8 transition-colors ${theme === 'dark'
-                            ? 'border-slate-700/50 bg-slate-800/30'
-                            : 'border-slate-200 bg-white shadow-sm'
+                        ? 'border-slate-700/50 bg-slate-800/30'
+                        : 'border-slate-200 bg-white shadow-sm'
                         }`}>
                         <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
@@ -278,21 +282,20 @@ export default function Post() {
                                 code({ node, inline, className, children, ...props }) {
                                     const code = String(children).replace(/\n$/, '');
                                     const language = className?.replace('language-', '') || 'text';
-                                    
+
                                     // Determine if this is inline code:
                                     // - If inline prop is true
                                     // - If code has no newlines and no language class (single backticks)
                                     // - If parent is not a pre element
                                     const isInline = inline || (!className && !code.includes('\n'));
-                                    
+
                                     if (isInline) {
                                         return (
-                                            <code 
-                                                className={`inline-code rounded px-1.5 py-0.5 text-xs sm:text-sm font-mono whitespace-nowrap ${
-                                                    theme === 'dark' 
-                                                        ? 'bg-slate-700 text-emerald-400' 
+                                            <code
+                                                className={`inline-code rounded px-1.5 py-0.5 text-xs sm:text-sm font-mono whitespace-nowrap ${theme === 'dark'
+                                                        ? 'bg-slate-700 text-emerald-400'
                                                         : 'bg-slate-200 text-emerald-600'
-                                                }`} 
+                                                    }`}
                                                 {...props}
                                             >
                                                 {children}
@@ -401,8 +404,8 @@ export default function Post() {
                     <Link
                         to={`/post/${prevPost.id}`}
                         className={`group flex items-center gap-2 rounded-lg px-3 py-2 text-xs sm:text-sm font-medium transition ${theme === 'dark'
-                                ? 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                            ? 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                             }`}
                     >
                         <ArrowLeft size={14} className="transition group-hover:-translate-x-1" />
@@ -417,8 +420,8 @@ export default function Post() {
                     <Link
                         to={`/post/${nextPost.id}`}
                         className={`group flex items-center gap-2 rounded-lg px-3 py-2 text-xs sm:text-sm font-medium transition ${theme === 'dark'
-                                ? 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                            ? 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                             }`}
                     >
                         <span className="max-w-[120px] sm:max-w-[200px] truncate">
