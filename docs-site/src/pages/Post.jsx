@@ -275,17 +275,31 @@ export default function Post() {
                         <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{
-                                code({ inline, className, children, ...props }) {
+                                code({ node, inline, className, children, ...props }) {
                                     const code = String(children).replace(/\n$/, '');
                                     const language = className?.replace('language-', '') || 'text';
-
-                                    if (inline) {
+                                    
+                                    // Determine if this is inline code:
+                                    // - If inline prop is true
+                                    // - If code has no newlines and no language class (single backticks)
+                                    // - If parent is not a pre element
+                                    const isInline = inline || (!className && !code.includes('\n'));
+                                    
+                                    if (isInline) {
                                         return (
-                                            <code className={`rounded px-1.5 py-0.5 text-xs sm:text-sm font-mono ${theme === 'dark' ? 'bg-slate-700 text-emerald-400' : 'bg-slate-200 text-emerald-600'
-                                                }`} {...props}>{children}</code>
+                                            <code 
+                                                className={`inline-code rounded px-1.5 py-0.5 text-xs sm:text-sm font-mono whitespace-nowrap ${
+                                                    theme === 'dark' 
+                                                        ? 'bg-slate-700 text-emerald-400' 
+                                                        : 'bg-slate-200 text-emerald-600'
+                                                }`} 
+                                                {...props}
+                                            >
+                                                {children}
+                                            </code>
                                         );
                                     }
-                                    // Use simple code block for all markdown code (no Monaco)
+                                    // Use simple code block for fenced code blocks
                                     return <SimpleCodeBlock code={code} language={language} />;
                                 },
                                 h1: ({ children }) => (
